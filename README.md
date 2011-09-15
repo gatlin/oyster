@@ -25,9 +25,11 @@ Oyster via Redis, thus allowing for programming practice in the browser.
 
 Not that the authors of this project intend to do any such thing, of course.
 
+>_>
+
 ## Usage
 
-Run ./oyter.
+Run ./oyster.
 
 In redis-cli,
 
