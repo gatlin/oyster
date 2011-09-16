@@ -25,7 +25,7 @@ sub pipe_to_child ($) {
 while (1) {
     tie *QUEUE, 'Redis::MessageQueue', 'bluequeue' || die $!;
     while (<QUEUE>) {
-        # read in tasks, spin them off into coroutines
+        # read in tasks, fork them off into processes
         my ($id, $code) = split /MAGICMAGICMAGIC/;
 
         if (pipe_to_child('CHILD')) {
