@@ -29,7 +29,7 @@ Not that the authors of this project intend to do any such thing, of course.
 
 ## Usage
 
-Run ./oyster.
+Run ./oyster.pl
 
 In redis-cli,
 
