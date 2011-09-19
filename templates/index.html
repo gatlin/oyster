@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Oyster</title>
+        <link rel="stylesheet" href="/static/style.css" media="all" />
+        <script
+            src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"
+            type="text/javascript">
+        </script>
+        <script src="/static/ace/ace.js" type='text/javascript'></script>
+        <script src="/static/jquery.ev.js" type='text/javascript'></script>
+        <script type='text/javascript'>
+            var editor;
+            window.onload = function () {
+                editor = ace.edit("editor");
+            };
+
+            var UUID;
+
+            var getContents = function() {
+                return document.getElementById("editor").env.document.getValue();
+            };
+
+            var postHandler = function(data) {
+                // begin the loop
+                UUID = data.uuid;
+                alert("UUID is " + UUID);
+                $.ev.loop('/recv/'+data.uuid, {
+                    response: function(ev) {
+                        $('#response').val(ev.response);
+                    },
+                });
+            };
+
+            $(document).ready(function() {
+                $('#run').click(function() {
+                    $.post("/start",{code: getContents()},postHandler);
+                });
+
+                $('#send').click(function() {
+                    $.post("/send/"+UUID,{input:$("#theInput").val()},function(d) {
+                    });
+                });
+
+            });
+        </script>
+    </head>
+    <body>
+        <div id='menu'>
+            <ul>
+                <li><a href="#" id="run">Run</a></li>
+                <li><input type='text' name='theInput' id='theInput' /><a
+                    href="#" id="send">Send input</a></li>
+                <li><textarea name='response' id='response'></textarea></li>
+            </ul>
+        </div>
+        <div id='wrapper'>
+            <div id='editor'>
+            </div>
+        </div>
+    </body>
+</html>

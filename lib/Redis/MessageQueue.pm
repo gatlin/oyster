@@ -6,11 +6,12 @@ use strict;
 use warnings;
 use Time::HiRes;
 use AnyEvent::Redis;
+use Redis;
 use Storable qw(nfreeze thaw);
 use Data::Dump qw(pp);
 
 {
-	my $timeout = 30;
+	my $timeout = 5;
 	my $redis;
 	my %redis;
 
@@ -26,7 +27,7 @@ Ties the filehandle to the clientId in Redis.
 	sub TIEHANDLE {
 		my ($class,$clientId) = (+shift,+shift);
 		%redis = @_;
-		$redis ||= AnyEvent::Redis->new(%redis);
+		$redis ||= Redis->new(%redis);
 		bless \$clientId, $class;
 	}
 
@@ -45,8 +46,7 @@ including asynchronously pushing _other_ messages.
 	sub PRINT {
 		my $this = shift;
         foreach (@_) {
-		    my $cv = $redis->lpush($$this, $_);
-            $cv->recv;
+		    $redis->lpush($$this, $_);
         }
 	}
 
@@ -64,6 +64,18 @@ to deal with the blocking operation.
 	my @messages = <CLIENT>;    # Flushes the message queue into @messages
 
 =cut
+	sub blocking_readline {
+        my $fn = pop;
+		my $this = shift;
+		my $r = AnyEvent::Redis->new(%redis);
+		my $message;
+        my $wantarray = wantarray;
+		$r->brpop($$this, $timeout, sub {
+			$message = $_[0][1];
+            $fn->($message);
+		});
+	}
+
 	sub READLINE {
 		my $this = shift;
 		my $r = AnyEvent::Redis->new(%redis);
@@ -79,19 +91,13 @@ to deal with the blocking operation.
 	sub _flush {
 		my $this = shift;
 		return () unless _len($this);
-		my $message;
-		my $cv = $redis->rpop($$this, sub {
-			$message = $_[0];
-		});
-		$cv->recv;
+		my $message = $redis->rpop($$this);
 		return ($message, _flush($this));
 	}
 
 	sub _len {
 		my $this = shift;
-		my $len;
-		my $cv = $redis->llen($$this, sub { $len = shift; });
-		$cv->recv;
+		my $len = $redis->llen($$this);
 		return $len;
 	}
 }

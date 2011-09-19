@@ -23,7 +23,7 @@ sub pipe_to_child ($) {
 
 # create the master queue which will read in tasks
 while (1) {
-    tie *QUEUE, 'Redis::MessageQueue', 'bluequeue' || die $!;
+    tie *QUEUE, 'Redis::MessageQueue', 'bluequeue' or die $!;
     while (<QUEUE>) {
         # read in tasks, fork them off into processes
         my ($id, $code) = split /MAGICMAGICMAGIC/;
@@ -38,8 +38,8 @@ while (1) {
             my $code = <STDIN>;
             chomp $id;
             chomp $code;
-            tie *CLIENTIN, 'Redis::MessageQueue', "$id:in" || die $!;
-            tie *CLIENTOUT,'Redis::MessageQueue', "$id:out" || die $!;
+            tie *CLIENTIN, 'Redis::MessageQueue', "$id:in" or die $!;
+            tie *CLIENTOUT,'Redis::MessageQueue', "$id:out" or die $!;
 
             {
                 local *STDIN = *CLIENTIN;
