@@ -69,6 +69,10 @@ to deal with the blocking operation.
         my $fn = pop;
 		my $r = AnyEvent::Redis->new(%redis);
 		$r->brpop($$this, $timeout, sub {
+
+            use Data::Dump qw(pp);
+            warn pp @_;
+
 			my $message = $_[0][1];
             return $fn->($message);
 		});

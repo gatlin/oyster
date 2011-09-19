@@ -35,8 +35,12 @@ use Redis::MessageQueue;
 
 sub get {
     my ($self,$uuid) = @_;
-    tie *APPIN, 'Redis::MessageQueue', "$uuid:out";
-    Redis::MessageQueue::blocking_readline(*APPIN,sub {
+    my $input = tie *APPIN, 'Redis::MessageQueue', "$uuid:out";
+    $input->blocking_readline(sub {
+
+        use Data::Dump qw(pp);
+        warn pp @_;
+
         $self->write({
             type => "response",
             success => 1,
