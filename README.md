@@ -31,11 +31,14 @@ Not that the authors of this project intend to do any such thing, of course.
 
 Run ./oyster.pl
 
+
 In redis-cli,
 
     lpush bluequeue "000MAGICMAGICMAGICprint 'Hello!';"
     lrange 000:out 0 -1
     1) "Hello!"
+
+The snazzy web interface is Coming Soon™.
 
 ## Limitations
 
