@@ -65,14 +65,12 @@ to deal with the blocking operation.
 
 =cut
 	sub blocking_readline {
-        my $fn = pop;
 		my $this = shift;
+        my $fn = pop;
 		my $r = AnyEvent::Redis->new(%redis);
-		my $message;
-        my $wantarray = wantarray;
 		$r->brpop($$this, $timeout, sub {
-			$message = $_[0][1];
-            $fn->($message);
+			my $message = $_[0][1];
+            return $fn->($message);
 		});
 	}
 

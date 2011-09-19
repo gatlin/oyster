@@ -37,12 +37,13 @@ sub get {
     my ($self,$uuid) = @_;
     tie *APPIN, 'Redis::MessageQueue', "$uuid:out";
     Redis::MessageQueue::blocking_readline(*APPIN,sub {
-            $self->write({
-                    type => "response",
-                    success => 1,
-                    response => $_[0],
-                });
-        }); 
+        $self->write({
+            type => "response",
+            success => 1,
+            response => $_[0],
+        });
+        $self->finish;
+    });
 }
 
 package SendHandler;
