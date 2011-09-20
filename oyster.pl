@@ -35,9 +35,9 @@ while (1) {
             close CHILD;
         } else {
             my $id = <STDIN>;
-            my $code = <STDIN>;
+            my $code = "";
+            $code .= $_ for <STDIN>;
             chomp $id;
-            chomp $code;
             tie *CLIENTIN, 'Redis::MessageQueue', "$id:in" or die $!;
             tie *CLIENTOUT,'Redis::MessageQueue', "$id:out" or die $!;
 

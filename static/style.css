@@ -6,9 +6,8 @@
 
   #wrapper {
       position: fixed;
-      bottom: 0;
-      top: 100px;
-      width: 100%;
+      left: 0;
+      width: 50%;
       height: 100%;
   }
 
@@ -20,9 +19,9 @@
 
   #menu {
       position: fixed;
-      top: 0;
-      width: 100%;
-      height: 100px;
+      right: 0;
+      width: 50%;
+      height: 100%;
   }
 
   #menu p {
@@ -35,10 +34,9 @@
   }
 
   #menu ul li {
-      display: inline;
   }
 
   #menu ul li textarea {
-      height: 75%;
+      height: 100%;
       margin:0;
   }
