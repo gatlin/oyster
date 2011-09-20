@@ -28,9 +28,9 @@
                 $.ev.loop('/recv/'+UUID, {
                     response: function(ev) {
                         var r = ev.response;
-                        r = r.replace("\n","<br>");
-                        console.log(ev);
-                        $("#response").html($("#response").html() + r);
+                        r = r.replace(/\n/g,"<br>");
+                        $("#response").append(r);
+                        $("#response")[0].scrollTop = $("#response")[0].scrollHeight;;
                     },
                 });
             };

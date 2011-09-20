@@ -15,12 +15,13 @@ use Redis::MessageQueue;
 
 sub post {
     my $self = shift;
-
     my $code = $self->request->parameters->{code};
-
-    tie *RUNNER, 'Redis::MessageQueue', 'bluequeue';
     my $uuid = Data::UUID->new->create_str();
+
+    tie local *RUNNER, 'Redis::MessageQueue', 'bluequeue';
     print RUNNER $uuid."MAGICMAGICMAGIC".$code;
+    close RUNNER;
+
     $self->write([{
             type => "started",
             success => 1,
@@ -35,17 +36,15 @@ use Redis::MessageQueue;
 
 sub get {
     my ($self,$uuid) = @_;
-    my $input = tie *APPIN, 'Redis::MessageQueue', "$uuid:out";
-    $input->blocking_readline(sub {
-
-        use Data::Dump qw(pp);
-        warn pp @_;
-
+    my $in = tie local *APPIN, 'Redis::MessageQueue', "$uuid:out";
+    $in->poll_once(sub {
+        my @messages = @_;
         $self->write([{
             type => "response",
             success => 1,
-            response => $_[0],
+            response => join("", @messages),
         }]);
+        close APPIN;
         $self->finish;
     });
 }
@@ -57,8 +56,11 @@ use Redis::MessageQueue;
 sub post {
     my ($self,$uuid) = @_;
     my $input = $self->request->parameters->{input};
+
     tie *APPOUT, 'Redis::MessageQueue', "$uuid:in";
     print APPOUT "$input";
+    close APPOUT;
+
     $self->write([{
         type => "sent",
         success => 1,

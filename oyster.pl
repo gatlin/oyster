@@ -1,13 +1,15 @@
 #!/usr/bin/env perl
 
-#use strict;
+use strict;
 use warnings;
+use Carp;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
 use Redis::MessageQueue;
 
 # from perlfork
 sub pipe_to_child ($) {
+    no strict 'refs';
     my $parent = shift;
     pipe my $child, $parent or die;
     my $pid = fork;
@@ -35,18 +37,20 @@ while (1) {
             close CHILD;
         } else {
             my $id = <STDIN>;
-            my $code = "";
-            $code .= $_ for <STDIN>;
             chomp $id;
-            tie *CLIENTIN, 'Redis::MessageQueue', "$id:in" or die $!;
-            tie *CLIENTOUT,'Redis::MessageQueue', "$id:out" or die $!;
+            my $code = do {local $/; <STDIN>};
 
             {
-                local *STDIN = *CLIENTIN;
-                local *STDOUT= *CLIENTOUT;
-                local *ARGV = *CLIENTIN;
+                tie local *STDIN, 'Redis::MessageQueue', "$id:in" or
+                    croak "Couldn't tie STDIN to [$id]: $!";
+                tie local *STDOUT, 'Redis::MessageQueue', "$id:out" or
+                    croak "Couldn't tie STDOUT to [$id]: $!";
+                tie local *STDERR, 'Redis::MessageQueue', "$id:out" or
+                    croak "Couldn't tie STDERR to [$id]: $!";
+                local *ARGV = *STDIN;
                 eval $code;
             }
+
             exit(0);
         }
     }
