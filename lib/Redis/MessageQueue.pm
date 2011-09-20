@@ -11,7 +11,7 @@ use Storable qw(nfreeze thaw);
 use Data::Dump qw(pp);
 
 {
-	my $timeout = 5;
+	my $timeout = 30;
 	my $redis;
 	my %redis;
 

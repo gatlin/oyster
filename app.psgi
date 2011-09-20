@@ -21,11 +21,11 @@ sub post {
     tie *RUNNER, 'Redis::MessageQueue', 'bluequeue';
     my $uuid = Data::UUID->new->create_str();
     print RUNNER $uuid."MAGICMAGICMAGIC".$code;
-    $self->write({
+    $self->write([{
             type => "started",
             success => 1,
             uuid => $uuid,
-    });
+    }]);
 }
 
 package RecvHandler;
@@ -41,11 +41,11 @@ sub get {
         use Data::Dump qw(pp);
         warn pp @_;
 
-        $self->write({
+        $self->write([{
             type => "response",
             success => 1,
             response => $_[0],
-        });
+        }]);
         $self->finish;
     });
 }
@@ -59,10 +59,10 @@ sub post {
     my $input = $self->request->parameters->{input};
     tie *APPOUT, 'Redis::MessageQueue', "$uuid:in";
     print APPOUT "$input";
-    $self->write({
+    $self->write([{
         type => "sent",
         success => 1,
-    });
+    }]);
 }
 
 package InitHandler;
