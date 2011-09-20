@@ -27,9 +27,10 @@
 
                 $.ev.loop('/recv/'+UUID, {
                     response: function(ev) {
+                        var r = ev.response;
+                        r = r.replace("\n","<br>");
                         console.log(ev);
-                        $("#response").html($("#response").html() +
-                            "<div>"+ev.response+"</div>");
+                        $("#response").html($("#response").html() + r);
                     },
                 });
             };
