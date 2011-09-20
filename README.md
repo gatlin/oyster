@@ -38,14 +38,16 @@ In redis-cli,
     lrange 000:out 0 -1
     1) "Hello!"
 
-The snazzy web interface is Coming Soon™.
+The web interface is a PSGI application. To run:
+
+    plackup app.psgi -s Twiggy
+
+will suffice.
 
 ## Limitations
 
 *   No code sanitation
-*   Various parameters are hard-coded
 *   Had to turn off strict to get a pipe to the forked child.
-*   Cannot configure the Redis connection -- yet
 
 ## Redis::MessageQueue
 
