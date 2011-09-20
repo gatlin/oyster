@@ -35,7 +35,7 @@ $SIG{CHLD} = sub {
     my $id = $children{$pid};
     return unless $id;
     tie local *APPERR, 'Redis::MessageQueue', "$id:out";
-    print APPERR "Killed by signal $?";
+    print APPERR "${id}KILL by signal $?";
     close APPERR;
     delete $pid_of{$id};
 };

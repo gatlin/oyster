@@ -68,11 +68,11 @@ sub get {
     my $in = tie local *APPIN, 'Redis::MessageQueue', "$uuid:out";
     $in->poll_once(sub {
         my @messages = @_;
-        $self->write([{
+        $self->write([map {{
             type => "response",
             success => 1,
-            response => join("", @messages),
-        }]);
+            response => $_,
+        }} @messages]);
         close APPIN;
         $self->finish;
     });

@@ -9,71 +9,21 @@
         </script>
         <script src="/static/ace/ace.js" type='text/javascript'></script>
         <script src="/static/jquery.ev.js" type='text/javascript'></script>
-        <script type='text/javascript'>
-
-            var editor, UUID;
-
-            window.onload = function () {
-                editor = ace.edit("editor");
-            };
-
-            var getContents = function() {
-                return document.getElementById("editor").env.document.getValue();
-            };
-
-            var postHandler = function(data) {
-                // begin the loop
-                UUID = data[0].uuid;
-                $('#runwrap').append("<a href='#' class='kill' id='"+UUID+"'>Kill "+UUID+"</a>");
-
-                $.ev.loop('/recv/'+UUID, {
-                    response: function(ev) {
-                        var r = ev.response;
-                        r = r.replace(/\n/g,"<br>");
-                        $("#response").append(r);
-                        $("#response")[0].scrollTop = $("#response")[0].scrollHeight;;
-                    },
-                });
-            };
-
-            $(document).ready(function() {
-                $('#run').click(function() {
-                    $.post("/start",{code: getContents()},postHandler);
-                });
-
-                $('#runwrap a.kill').live('click',function() {
-                    var id = $(this).attr('id');
-                    $.post(
-                        "/kill/"+id,
-                        {signal: 9},
-                        function(data) {
-                            $('#runwrap #'+id).remove();
-                        }
-                    );
-                });
-
-                $('#send').click(function() {
-                    $.post("/send/"+UUID,{input:$("#theInput").val()},function(d) {
-                    });
-                });
-
-            });
-        </script>
+        <script src="/static/script.js" type='text/javascript'></script>
     </head>
     <body><div id='main'>
         <div id='menu'>
-
+        <div id='toolbar'>
             <div id='runwrap'>
-                <a href="#" id='run'>Run</a>
+                <button id='run'>Run</button>
             </div>
-
             <div id='inputwrap'>
-                <input type='text' name='theInput' id='theInput' />
+                <textarea name='theInput' id='theInput'></textarea>
             </div>
-
             <div id='sendwrap'>
-                <a href='#' id='send'>Send Input</a>
+                <button id='send'>Send</button>
             </div>
+        </div>
 
             <div id='response'></div>
         </div>
