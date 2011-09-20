@@ -28,8 +28,8 @@
                 $.ev.loop('/recv/'+UUID, {
                     response: function(ev) {
                         console.log(ev);
-                        $("#response").text($("#response").text() +
-                            ev.response);
+                        $("#response").html($("#response").html() +
+                            "<div>"+ev.response+"</div>");
                     },
                 });
             };
@@ -47,9 +47,8 @@
             });
         </script>
     </head>
-    <body>
+    <body><div id='main'>
         <div id='menu'>
-            <div id='response'></div>
 
             <div id='runwrap'>
                 <a href="#" id='run'>Run</a>
@@ -63,12 +62,10 @@
                 <a href='#' id='send'>Send Input</a>
             </div>
 
-            <div id='responsewrap'>
-                <textarea name='response' id='response'></textarea>
-            </div>
+            <div id='response'></div>
         </div>
         <div id='wrapper'>
             <div id='editor'></div>
         </div>
-    </body>
+    </div></body>
 </html>
