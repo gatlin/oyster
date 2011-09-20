@@ -49,12 +49,23 @@
     </head>
     <body>
         <div id='menu'>
-            <ul>
-                <li><a href="#" id="run">Run</a></li>
-                <li><input type='text' name='theInput' id='theInput' /><a
-                    href="#" id="send">Send input</a></li>
-                <li><textarea name='response' id='response'></textarea></li>
-            </ul>
+            <div id='response'></div>
+
+            <div id='runwrap'>
+                <a href="#" id='run'>Run</a>
+            </div>
+
+            <div id='inputwrap'>
+                <input type='text' name='theInput' id='theInput' />
+            </div>
+
+            <div id='sendwrap'>
+                <a href='#' id='send'>Send Input</a>
+            </div>
+
+            <div id='responsewrap'>
+                <textarea name='response' id='response'></textarea>
+            </div>
         </div>
         <div id='wrapper'>
             <div id='editor'></div>
