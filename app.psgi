@@ -12,6 +12,7 @@ use Data::UUID;
 package StartHandler;
 use base qw(Tatsumaki::Handler);
 use Redis::MessageQueue;
+use YAML qw(Dump);
 
 sub post {
     my $self = shift;
@@ -19,13 +20,41 @@ sub post {
     my $uuid = Data::UUID->new->create_str();
 
     tie local *RUNNER, 'Redis::MessageQueue', 'bluequeue';
-    print RUNNER $uuid."MAGICMAGICMAGIC".$code;
+    print RUNNER Dump({
+        type => 'run',
+        uuid => $uuid,
+        code => $code,
+    });
     close RUNNER;
 
     $self->write([{
             type => "started",
             success => 1,
             uuid => $uuid,
+    }]);
+}
+
+package KillHandler;
+use base qw(Tatsumaki::Handler);
+use Redis::MessageQueue;
+use YAML qw(Dump);
+
+sub post {
+    my ($self,$uuid) = @_;
+    my $signal = $self->request->parameters->{signal};
+
+    tie local *RUNNER, 'Redis::MessageQueue', 'bluequeue';
+    print RUNNER Dump({
+        type => 'signal',
+        uuid => $uuid,
+        signal => $signal,
+    });
+    close RUNNER;
+
+    $self->write([{
+        type => 'signalled',
+        success => 1,
+        uuid => $uuid,
     }]);
 }
 
@@ -57,7 +86,7 @@ sub post {
     my ($self,$uuid) = @_;
     my $input = $self->request->parameters->{input};
 
-    tie *APPOUT, 'Redis::MessageQueue', "$uuid:in";
+    tie local *APPOUT, 'Redis::MessageQueue', "$uuid:in";
     print APPOUT "$input";
     close APPOUT;
 
@@ -81,7 +110,7 @@ use File::Basename;
 my $uuid_re = '[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12}';
 my $app = Tatsumaki::Application->new([
     "/start\$" => 'StartHandler',
-#    "/kill/($uuid_re)" => 'KillHandler',
+    "/kill/($uuid_re)" => 'KillHandler',
     "/send/($uuid_re)\$" => 'SendHandler',
     "/recv/($uuid_re)\$" => 'RecvHandler',
     "/\$" => 'InitHandler',

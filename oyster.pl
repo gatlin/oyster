@@ -6,6 +6,8 @@ use Carp;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
 use Redis::MessageQueue;
+use YAML qw(Load);
+use Data::Dump qw(pp);
 
 # from perlfork
 sub pipe_to_child ($) {
@@ -23,14 +25,27 @@ sub pipe_to_child ($) {
     $pid;
 }
 
-# create the master queue which will read in tasks
-while (1) {
-    tie *QUEUE, 'Redis::MessageQueue', 'bluequeue' or die $!;
-    while (<QUEUE>) {
-        # read in tasks, fork them off into processes
-        my ($id, $code) = split /MAGICMAGICMAGIC/;
+my %pid_of;
 
-        if (pipe_to_child('CHILD')) {
+$SIG{CHLD} = sub {
+    local ($!,$?);
+    my $pid = waitpid -1, 0;
+    return if $pid == -1;
+    my %children = reverse %pid_of;
+    my $id = $children{$pid};
+    return unless $id;
+    tie local *APPERR, 'Redis::MessageQueue', "$id:out";
+    print APPERR "Killed by signal $?";
+    close APPERR;
+    delete $pid_of{$id};
+};
+
+my %dispatch = (
+    run => sub {
+        my %op = %{+shift};
+        my ($id,$code) = @op{qw(uuid code)};
+        if (my $pid = pipe_to_child('CHILD')) {
+            $pid_of{$id} = $pid;
             print "id is $id and code is $code\n";
             print CHILD "$id\n";
             print CHILD "$code\n";
@@ -53,6 +68,20 @@ while (1) {
 
             exit(0);
         }
+    },
+    signal => sub {
+        my %op = %{+shift};
+        my ($id,$sig) = @op{qw(uuid signal)};
+        kill $sig, $pid_of{$id} if $pid_of{$id};
+    },
+);
+
+# create the master queue which will read in tasks
+while (1) {
+    tie *QUEUE, 'Redis::MessageQueue', 'bluequeue' or die $!;
+    while (<QUEUE>) {
+        my $op = Load($_);
+        $dispatch{$op->{type}}->($op);
     }
 }
 

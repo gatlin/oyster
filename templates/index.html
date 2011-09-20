@@ -24,6 +24,7 @@
             var postHandler = function(data) {
                 // begin the loop
                 UUID = data[0].uuid;
+                $('#runwrap').append("<a href='#' class='kill' id='"+UUID+"'>Kill "+UUID+"</a>");
 
                 $.ev.loop('/recv/'+UUID, {
                     response: function(ev) {
@@ -38,6 +39,17 @@
             $(document).ready(function() {
                 $('#run').click(function() {
                     $.post("/start",{code: getContents()},postHandler);
+                });
+
+                $('#runwrap a.kill').live('click',function() {
+                    var id = $(this).attr('id');
+                    $.post(
+                        "/kill/"+id,
+                        {signal: 9},
+                        function(data) {
+                            $('#runwrap #'+id).remove();
+                        }
+                    );
                 });
 
                 $('#send').click(function() {
