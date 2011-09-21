@@ -11,45 +11,58 @@ To view the license, please visit [its web page](http://www.gnu.org/copyleft/gpl
 
 ## Introduction
 
-We had this cool idea and wanted to get it out the door ASAP. Thus, this is
-not polished.
+We had this cool idea and wanted to get it out the door ASAP. So, without too much egregious apology, we'd like to 
+come clean that this is not a finished product - but it's functional!
 
-Oyster is a simple server which accepts Perl snippets from a Redis list,
-redirects STDIN/STDOUT to Redis lists, and `evals` the snippet. The snippet can
-naively read / write from / to STDIN / STDOUT (apologies for the awkward sentence).
+Oyster is a forking server which remotely runs Perl code. It makes the program's STDIN and STDOUT available
+as Redis lists, and communicates with its frontend via Redis as well.
 
-Each snippet is run in its own separate process. Nothing fancy is used.
+The upshot is that you can write naive Perl code and run it *interactively* in the browser. This doesn't simply eval
+code and print the output: you can accept textual input in real time. We think this is neat.
 
-The upshot is that a hosted web service could be built on this and interact with 
-Oyster via Redis, thus allowing for programming practice in the browser.
-
-Not that the authors of this project intend to do any such thing, of course.
-
->_>
+We have written an example web application using Tatsumaki; the relevant code is in app.psgi (and usage is below). It
+exists to showcase the current features of oyster. We encourage people to come up with their own frontends to oyster
+for any purpose they see fit.
 
 ## Usage
 
-Run ./oyster.pl
-
-
-In redis-cli,
-
-    lpush bluequeue "000MAGICMAGICMAGICprint 'Hello!';"
-    lrange 000:out 0 -1
-    1) "Hello!"
-
-The web interface is a PSGI application. To run:
+We have a simple PSGI-based web interface. We recommend running with plackup, eq
 
     plackup app.psgi -s Twiggy
+    
+Useful modules to have installed:
 
-will suffice.
+* Plack
+* Plack::Handler::Twiggy
+* Data::Dump
+* Data::UUID
+* Text::MicroTemplate::File
+* Any::Moose
+* JSON
+* YAML
+* Redis
+* AnyEvent::Redis
+
+We include our custom Redis tiehandle class and the Tatsumaki framework in `lib/`. 
+
+### Redis::MessageQueue
+
+Part of the magic sauce is a custom Redis tiehandle class which oyster uses extensively, and which can easily be
+used in your own web frontend (we use it in ours). Example usage:
+
+    tie my *REDISIN, "Redis::MessageQueue", 'keyname', host => 127.0.0.1, port => 6739;
+
+You can also do things like this ...
+
+    tie local *STDIN, 'Redis::MessageQueue', 'channel:in';
+
+... which is what we do in oyster.
 
 ## Limitations
 
 *   No code sanitation
 *   Had to turn off strict to get a pipe to the forked child.
 
-## Redis::MessageQueue
+## Roadmap
 
-We implement a TIEHANDLE for Redis. It is really badass; it might become its
-own project. Feel free to use it on its own under the same licensing.
+See the "Issues" page on GitHub.
