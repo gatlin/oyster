@@ -78,10 +78,11 @@ my %dispatch = (
 
 # create the master queue which will read in tasks
 while (1) {
-    tie *QUEUE, 'Redis::MessageQueue', 'bluequeue' or die $!;
+    tie local *QUEUE, 'Redis::MessageQueue', 'bluequeue' or die $!;
     while (<QUEUE>) {
         my $op = Load($_);
         $dispatch{$op->{type}}->($op);
     }
+    close QUEUE;
 }
 
