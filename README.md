@@ -26,7 +26,13 @@ for any purpose they see fit.
 
 ## Usage
 
-We have a simple PSGI-based web interface. We recommend running with plackup, eq
+First, install and run Redis. This is left as an exercise for the reader.Then, run oyster:
+
+    ./oyster.pl
+
+and technically you're done. But it's useless without a frontend interface.
+
+We have a simple PSGI-based web interface. We recommend running with plackup, eg
 
     plackup app.psgi -s Twiggy
     
