@@ -24,13 +24,12 @@ var postHandler = function(data) {
                     $('#runwrap').append("<button id='run'>Run</button>");
                     $.ev.stop();
                 }
-                $('#response').append(
-                    "<div class='meta'>" + message + "</div>"
+                $('#response').trigger('output',
+                    "<span class='meta'>" + message + "</span><br />"
                 );
             } else {
-                $("#response").append(r);
+                $("#response").trigger('output',r);
             }
-            $("#response")[0].scrollTop = $("#response")[0].scrollHeight;
         },
     });
 };
@@ -51,9 +50,38 @@ $(document).ready(function() {
         );
     });
 
-    $('#send').click(function() {
-        $.post("/send/"+UUID,{input:$("#theInput").val()},function(d) {
-        });
+    $('#console').click(function(ev) {
+        $('#input-buffer').focus();
     });
 
+    $('#response').bind('output', function(ev,output) {
+        $(this).append(output);
+        $('#console')[0].scrollTop = $('#console')[0].scrollHeight;
+    });
+
+    $('#input-buffer').keydown(function(ev) {
+        $(this).trigger('resize');
+    });
+
+    $('#input-buffer').bind('resize', function(ev) {
+        $(this)[0].size = $(this).val().length + 1;
+    });
+
+    $('#input-buffer').bind('set', function(ev,value) {
+        $(this).val(value);
+        $(this).trigger('resize');
+    });
+
+    $('#input-buffer').bind('clear', function(ev) {
+        $(this).trigger('set','');
+    });
+
+    $('#input-buffer').keyup(function(ev) {
+        var self = $(this);
+        if(ev.which == 13) {    // Enter
+            $('#response').trigger('output',"<span class='input'>" + self.val() + "</span><br />");
+            $.post("/send/"+UUID,{input:self.val()}, function(data){});
+            $('#input-buffer').trigger('clear');
+        }
+    });
 });

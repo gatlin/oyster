@@ -9,12 +9,14 @@ use Time::HiRes;
 use AnyEvent::Redis;
 use Redis;
 use Storable qw(nfreeze thaw);
-use Data::Dump qw(pp);
+
+# use Data::Dump qw(pp);
 
 {
-	my $timeout = 30;   # Default value
+	my $timeout = 30;   # For BLPOPs, in seconds
 	my $redis;          # We want only a single Redis connection
 	my %redis;          # Connection information
+    my $keepalive;      # So Redis doesn't drop us on the floor
 
 =head2 TIEHANDLE
 
@@ -30,6 +32,11 @@ Ties the filehandle to the clientId in Redis.
         port => 5800;
 
 =cut
+    sub _connect () {
+        $redis ||= Redis->new(%redis) or
+            croak qq{Couldn't create Redis connection: $!};
+    }
+
 	sub TIEHANDLE {
 		my ($class,$clientId) = (+shift,+shift);
 		%redis = @_;
@@ -38,9 +45,8 @@ Ties the filehandle to the clientId in Redis.
             $timeout = $redis{timeout};
             delete $redis{timeout};
         }
+        _connect;
 
-		$redis ||= Redis->new(%redis) or
-            croak qq{Couldn't create Redis connection: $!};
 		bless \$clientId, $class;
 	}
 
@@ -88,6 +94,7 @@ to deal with the blocking operation.
 			$message = $_[0][1];
 		}) or croak qq{Couldn't BRPOP from [$$this]: $!};
 		$cv->recv;
+        $r->quit; undef $r;
 		return $message unless wantarray;
 		return ($message, _flush($this));
 	}
@@ -158,6 +165,7 @@ number of messages to return, and a callback as its arguments.
 		my $r = AnyEvent::Redis->new(%redis);
 		$r->brpop($$this, $timeout, sub {
 			my $message = $_[0][1];
+            $r->quit; undef $r;
             return $fn->($message, _flush($this,$count));
 		});
 	}
@@ -193,6 +201,7 @@ Cleanup code so that we don't end up with a bunch of open filehandles.
     sub CLOSE {
         # The elements of @_ are *aliases*, not copies, so undefing $_[0] marks
         # the caller's typeglob as empty.
+        $redis->ping;
         undef $_[0];
     }
 
