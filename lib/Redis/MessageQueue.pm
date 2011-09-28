@@ -58,6 +58,8 @@ including asynchronously pushing _other_ messages.
 =cut
 	sub PRINT {
 		my $this = shift;
+        eval { $redis->ping };
+        $redis = Redis->new(%redis) if $@;
         foreach (@_) {
             $redis->lpush($$this, $_) or
                 croak qq{Failed to push message [$_] to [$$this]: $!};
@@ -81,6 +83,8 @@ to deal with the blocking operation.
 =cut
 	sub READLINE {
 		my $this = shift;
+        eval { $redis->ping };
+        $redis = Redis->new(%redis) if $@;
 		my $r = AnyEvent::Redis->new(%redis) or
             croak qq(Couldn't create AnyEvent::Redis connection to [@{[%redis]}]: $!);
 		my $message;
