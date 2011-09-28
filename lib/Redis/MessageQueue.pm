@@ -32,20 +32,16 @@ Ties the filehandle to the clientId in Redis.
         port => 5800;
 
 =cut
-    sub _connect () {
-        $redis ||= Redis->new(%redis) or
-            croak qq{Couldn't create Redis connection: $!};
-    }
 
 	sub TIEHANDLE {
 		my ($class,$clientId) = (+shift,+shift);
 		%redis = @_;
+        $redis ||= Redis->new(%redis);
 
         if ($redis{timeout}) {
             $timeout = $redis{timeout};
             delete $redis{timeout};
         }
-        _connect;
 
 		bless \$clientId, $class;
 	}

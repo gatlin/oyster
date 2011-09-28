@@ -46,9 +46,13 @@ html, body {
     border: 1px solid #DDD;
     background-color: transparent;
     height: 14px;
-    margin: -1px -2px -1px -2px;
+    margin: -1px -10px -1px -10px;
     vertical-align: text-top;
     font: 14px monospace;
+}
+
+span#response {
+    white-space: pre;
 }
 
 span.input {
