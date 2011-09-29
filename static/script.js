@@ -2,26 +2,31 @@ var editor, UUID;
 
 window.onload = function () {
     editor = ace.edit("editor");
-};
+    if(localStorage.editor_text)
+        setContents(localStorage.editor_text);
+}
 
 var getContents = function() {
     return document.getElementById("editor").env.document.getValue();
 };
 
+var setContents = function(value) {
+    return $('#editor')[0].env.document.setValue(value);
+};
+
 var postHandler = function(data) {
     // begin the loop
     UUID = data[0].uuid;
-    $('#runwrap #run').remove();
-    $('#runwrap').append("<button class='kill' id='"+UUID+"'>Kill</button>");
 
     $.ev.loop('/recv/'+UUID, {
         response: function(ev) {
-            var r = ev.response.replace(/\n/g,"<br/>");
+            var r;
+            if (ev.response) r = ev.response.replace(/\n/g,"<br/>");
+            else r = '';
             if (r.indexOf(UUID) >= 0) {
                 var message = r.substr(UUID.length);
                 if (message.indexOf("KILL") == 0) {
-                    $('#runwrap #'+UUID).remove();
-                    $('#runwrap').append("<button id='run'>Run</button>");
+                    $('#runwrap #run').trigger('killed');
                     $.ev.stop();
                 }
                 $('#response').trigger('output',
@@ -32,22 +37,60 @@ var postHandler = function(data) {
             }
         },
     });
+
+    $('#runwrap #run').trigger('running');
 };
 
 $(document).ready(function() {
-    $('#runwrap #run').live('click',function() {
-        $('#response').text('');
-        $.post("/start",{code: getContents()},postHandler);
+    $('#runwrap #run').bind('stopped', function() {
+        var self = $(this);
+        self.removeAttr('disabled');
+        self.text('Run');
+        self.unbind('click');
+        self.one('click', function() {
+            $('#response').text('');
+            self.trigger('starting');
+            $.post('/start',{code: getContents()},postHandler);
+        });
     });
 
-    $('#runwrap .kill').live('click',function() {
-        var id = $(this).attr('id');
-        $.post(
-            "/kill/"+id,
-            {signal: 9},
-            function(data) {
-            }
-        );
+    $('#runwrap #run').bind('starting', function() {
+        $(this).attr('disabled','disabled');
+        $(this).text('Starting...');
+    });
+
+    $('#runwrap #run').bind('running', function() {
+        var self = $(this);
+        $('#input-buffer').focus();
+        self.removeAttr('disabled');
+        self.text('Kill');
+        self.unbind('click');
+        self.one('click', function() {
+            self.trigger('killing');
+            $.post('/kill/'+UUID,{signal: 9}, function(data) {
+                self.trigger('killed');
+            });
+        });
+    });
+
+    $('#runwrap #run').bind('killing', function() {
+        $(this).attr('disabled','disabled');
+        $(this).text('Killing...');
+    });
+
+    $('#runwrap #run').bind('killed', function() {
+        var self = $(this);
+        self.attr('disabled','disabled');
+        self.text('Killed');
+        $('#editor textarea').focus();
+        setTimeout(function() {
+            self.trigger('stopped');
+        },1000);
+    });
+    $('#runwrap #run').trigger('stopped');      // Initial state is stopped.
+
+    $('#editor').focusout(function(ev) {
+        localStorage.editor_text = getContents();
     });
 
     $('#console').click(function(ev) {
