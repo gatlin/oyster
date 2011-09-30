@@ -16,7 +16,6 @@ use Storable qw(nfreeze thaw);
 	my $timeout = 30;   # For BLPOPs, in seconds
 	my $redis;          # We want only a single Redis connection
 	my %redis;          # Connection information
-    my $keepalive;      # So Redis doesn't drop us on the floor
 
 =head2 TIEHANDLE
 
@@ -88,10 +87,12 @@ to deal with the blocking operation.
 		my $r = AnyEvent::Redis->new(%redis) or
             croak qq(Couldn't create AnyEvent::Redis connection to [@{[%redis]}]: $!);
 		my $message;
-		my $cv = $r->brpop($$this, $timeout, sub {
-			$message = $_[0][1];
-		}) or croak qq{Couldn't BRPOP from [$$this]: $!};
-		$cv->recv;
+		until ($message) {
+            my $cv = $r->brpop($$this, $timeout, sub {
+			    $message = $_[0][1];
+		    }) or croak qq{Couldn't BRPOP from [$$this]: $!};
+		    $cv->recv;
+        }
         $r->quit; undef $r;
 		return $message unless wantarray;
 		return ($message, _flush($this));
