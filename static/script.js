@@ -2,17 +2,15 @@ var editor, UUID;
 
 window.onload = function () {
     editor = ace.edit("editor");
+    editor.setTheme('ace/theme/crimson_editor');
+    editor.getSession().setMode(new (require('ace/mode/perl').Mode));
+//    editor.setKeyboardHandler(require('ace/keyboard/keybinding/vim').Vim);
     if(localStorage.editor_text)
-        setContents(localStorage.editor_text);
+        editor.getSession().setValue(localStorage.editor_text);
+    editor.getSession().on('change', function () {
+        localStorage.editor_text = editor.getSession().getValue();
+    });
 }
-
-var getContents = function() {
-    return document.getElementById("editor").env.document.getValue();
-};
-
-var setContents = function(value) {
-    return $('#editor')[0].env.document.setValue(value);
-};
 
 var postHandler = function(data) {
     // begin the loop
@@ -50,7 +48,7 @@ $(document).ready(function() {
         self.one('click', function() {
             $('#response').text('');
             self.trigger('starting');
-            $.post('/start',{code: getContents()},postHandler);
+            $.post('/start',{code: editor.getSession().getValue()},postHandler);
         });
     });
 
@@ -88,10 +86,6 @@ $(document).ready(function() {
         },1000);
     });
     $('#runwrap #run').trigger('stopped');      // Initial state is stopped.
-
-    $('#editor').focusout(function(ev) {
-        localStorage.editor_text = getContents();
-    });
 
     $('#console').click(function(ev) {
         $('#input-buffer').focus();
