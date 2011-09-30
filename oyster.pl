@@ -54,6 +54,8 @@ my %dispatch = (
             my $id = <STDIN>;
             chomp $id;
             my $code = do {local $/; <STDIN>};
+            use Privileges::Drop;
+            drop_privileges('nobody');
 
             BEGIN {
                 *CORE::GLOBAL::fork = sub {1};
