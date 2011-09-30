@@ -60,10 +60,9 @@ my %dispatch = (
                     croak "Couldn't tie STDIN to [$id]: $!";
                 tie local *STDOUT, 'Redis::MessageQueue', "$id:out" or
                     croak "Couldn't tie STDOUT to [$id]: $!";
-                tie local *STDERR, 'Redis::MessageQueue', "$id:out" or
-                    croak "Couldn't tie STDERR to [$id]: $!";
+                local *STDERR = *STDOUT;
                 local *ARGV = *STDIN;
-                eval $code;
+                eval $code; warn $@ if $@;
             }
 
             exit(0);
