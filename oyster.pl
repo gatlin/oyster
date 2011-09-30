@@ -55,6 +55,10 @@ my %dispatch = (
             chomp $id;
             my $code = do {local $/; <STDIN>};
 
+            BEGIN {
+                *CORE::GLOBAL::fork = sub {1};
+            }
+
             tie local *STDIN, 'Redis::MessageQueue', "$id:in" or
                 croak "Couldn't tie STDIN to [$id]: $!";
             tie local *STDOUT, 'Redis::MessageQueue', "$id:out" or
