@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
-use Redis::MessageQueue;
+use Redis::Handle;
 use YAML qw(Load);
 use Data::Dump qw(pp);
 
@@ -34,7 +34,7 @@ $SIG{CHLD} = sub {
     my %children = reverse %pid_of;
     my $id = $children{$pid};
     return unless $id;
-    tie local *APPERR, 'Redis::MessageQueue', "$id:out";
+    tie local *APPERR, 'Redis::Handle', "$id:out";
     print APPERR "${id}KILL by signal $?";
     close APPERR;
     delete $pid_of{$id};
@@ -56,11 +56,11 @@ my %dispatch = (
             my $code = do {local $/; <STDIN>};
 
             {
-                tie local *STDIN, 'Redis::MessageQueue', "$id:in" or
+                tie local *STDIN, 'Redis::Handle', "$id:in" or
                     croak "Couldn't tie STDIN to [$id]: $!";
-                tie local *STDOUT, 'Redis::MessageQueue', "$id:out" or
+                tie local *STDOUT, 'Redis::Handle', "$id:out" or
                     croak "Couldn't tie STDOUT to [$id]: $!";
-                tie local *STDERR, 'Redis::MessageQueue', "$id:out" or
+                tie local *STDERR, 'Redis::Handle', "$id:out" or
                     croak "Couldn't tie STDERR to [$id]: $!";
                 local *ARGV = *STDIN;
                 eval $code;
@@ -78,7 +78,7 @@ my %dispatch = (
 
 # create the master queue which will read in tasks
 while (1) {
-    tie local *QUEUE, 'Redis::MessageQueue', 'bluequeue' or die $!;
+    tie local *QUEUE, 'Redis::Handle', 'bluequeue' or die $!;
     while (<QUEUE>) {
         my $op = Load($_);
         $dispatch{$op->{type}}->($op);
