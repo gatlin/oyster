@@ -68,9 +68,9 @@ my %dispatch = (
                 eval $code;
             }
 
-            tie local *STDIN, 'Redis::MessageQueue', "$id:in" or
+            tie local *STDIN, 'Redis::Handle', "$id:in" or
                 croak "Couldn't tie STDIN to [$id]: $!";
-            tie local *STDOUT, 'Redis::MessageQueue', "$id:out" or
+            tie local *STDOUT, 'Redis::Handle', "$id:out" or
                 croak "Couldn't tie STDOUT to [$id]: $!";
             local *STDERR = *STDOUT;
             local *ARGV = *STDIN;
