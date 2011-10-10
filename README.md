@@ -48,21 +48,9 @@ Useful modules to have installed:
 * YAML
 * Redis
 * AnyEvent::Redis
+* Redis::Handle (Tron created this!)
 
-We include our custom Redis tiehandle class and the Tatsumaki framework in `lib/`. 
-
-### Redis::MessageQueue
-
-Part of the magic sauce is a custom Redis tiehandle class which oyster uses extensively, and which can easily be
-used in your own web frontend (we use it in ours). Example usage:
-
-    tie my *REDISIN, "Redis::MessageQueue", 'keyname', host => 127.0.0.1, port => 6739;
-
-You can also do things like this ...
-
-    tie local *STDIN, 'Redis::MessageQueue', 'channel:in';
-
-... which is what we do in oyster.
+We include the Tatsumaki framework in `lib/`. 
 
 ## Limitations
 

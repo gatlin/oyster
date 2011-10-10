@@ -11,7 +11,7 @@ use Data::UUID;
 
 package StartHandler;
 use base qw(Tatsumaki::Handler);
-use Redis::MessageQueue;
+use Redis::Handle;
 use YAML qw(Dump);
 
 sub post {
@@ -19,7 +19,7 @@ sub post {
     my $code = $self->request->parameters->{code};
     my $uuid = Data::UUID->new->create_str();
 
-    tie local *RUNNER, 'Redis::MessageQueue', 'bluequeue';
+    tie local *RUNNER, 'Redis::Handle', 'bluequeue';
     print RUNNER Dump({
         type => 'run',
         uuid => $uuid,
@@ -36,14 +36,14 @@ sub post {
 
 package KillHandler;
 use base qw(Tatsumaki::Handler);
-use Redis::MessageQueue;
+use Redis::Handle;
 use YAML qw(Dump);
 
 sub post {
     my ($self,$uuid) = @_;
     my $signal = $self->request->parameters->{signal};
 
-    tie local *RUNNER, 'Redis::MessageQueue', 'bluequeue';
+    tie local *RUNNER, 'Redis::Handle', 'bluequeue';
     print RUNNER Dump({
         type => 'signal',
         uuid => $uuid,
@@ -61,11 +61,11 @@ sub post {
 package RecvHandler;
 use base qw(Tatsumaki::Handler);
 __PACKAGE__->asynchronous(1);
-use Redis::MessageQueue;
+use Redis::Handle;
 
 sub get {
     my ($self,$uuid) = @_;
-    my $in = tie local *APPIN, 'Redis::MessageQueue', "$uuid:out";
+    my $in = tie local *APPIN, 'Redis::Handle', "$uuid:out";
     $in->poll_once(sub {
         my @messages = @_;
         $self->write([map {{
@@ -80,13 +80,13 @@ sub get {
 
 package SendHandler;
 use base qw(Tatsumaki::Handler);
-use Redis::MessageQueue;
+use Redis::Handle;
 
 sub post {
     my ($self,$uuid) = @_;
     my $input = $self->request->parameters->{input};
 
-    tie local *APPOUT, 'Redis::MessageQueue', "$uuid:in";
+    tie local *APPOUT, 'Redis::Handle', "$uuid:in";
     print APPOUT "$input";
     close APPOUT;
 
