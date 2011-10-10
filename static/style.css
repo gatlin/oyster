@@ -34,21 +34,25 @@ html, body {
     margin-right: 5px;
     width: 100%;
     overflow: auto;
-    background-color: #EEE;
+    background-color: #000;
     border: 0;
     border-top: 1px solid #CCC;
-    box-shadow: inset 0px 10px 30px #DDD;
+/*    box-shadow: inset 0px 10px 30px #DDD; */
     font: 14px monospace;
+    color: #EEE;
+    padding: 10px;
 }
 
 #input-buffer {
-    border: 1px solid #DDD;
+/*    border: 1px solid #DDD; */
+    border: 0px;
     background-color: transparent;
     height: 14px;
     margin: -1px -2px -1px -2px;
     padding: 1px 0px 1px 0px;
     vertical-align: text-top;
     font: 14px monospace;
+    color: #009900;
 }
 
 #input-buffer:focus {
