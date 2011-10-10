@@ -104,7 +104,7 @@ $(document).ready(function() {
         $('#console')[0].scrollTop = $('#console')[0].scrollHeight;
     });
 
-    $('#input-buffer').bind('focus keyup mousedown',function(ev) {
+    $('#input-buffer').bind('focus keydown mousedown',function(ev) {
         $(this).trigger('resize');
     });
 
