@@ -2,17 +2,25 @@ var editor, UUID;
 
 window.onload = function () {
     editor = ace.edit("editor");
+    editor.setTheme('ace/theme/monokai');
+    editor.getSession().setMode(new (require('ace/mode/perl').Mode));
     if(localStorage.editor_text)
-        setContents(localStorage.editor_text);
+        editor.getSession().setValue(localStorage.editor_text);
+    editor.getSession().on('change', function () {
+        localStorage.editor_text = editor.getSession().getValue();
+    });
+    require('pilot/canon').addCommand({
+        name: 'run',
+        bindKey: {
+            win: 'F2',
+            mac: 'F2',
+            sender: 'editor',
+        },
+        exec: function (env, args, request) {
+            $('#runwrap #run').trigger('click');
+        },
+    });
 }
-
-var getContents = function() {
-    return document.getElementById("editor").env.document.getValue();
-};
-
-var setContents = function(value) {
-    return $('#editor')[0].env.document.setValue(value);
-};
 
 var postHandler = function(data) {
     // begin the loop
@@ -20,17 +28,15 @@ var postHandler = function(data) {
 
     $.ev.loop('/recv/'+UUID, {
         response: function(ev) {
-            var r;
-            if (ev.response) r = ev.response.replace(/\n/g,"<br/>");
-            else r = '';
-            if (r.indexOf(UUID) >= 0) {
+            var r = ev.response || '';
+            if (r.indexOf(UUID) == 0) {
                 var message = r.substr(UUID.length);
                 if (message.indexOf("KILL") == 0) {
                     $('#runwrap #run').trigger('killed');
                     $.ev.stop();
                 }
                 $('#response').trigger('output',
-                    "<span class='meta'>" + message + "</span><br />"
+                    "\n<span class='meta'>" + message + "</span>\n"
                 );
             } else {
                 $("#response").trigger('output',r);
@@ -46,15 +52,15 @@ $(document).ready(function() {
         var self = $(this);
         self.removeAttr('disabled');
         self.text('Run');
-        self.unbind('click');
         self.one('click', function() {
             $('#response').text('');
             self.trigger('starting');
-            $.post('/start',{code: getContents()},postHandler);
+            $.post('/start',{code: editor.getSession().getValue()},postHandler);
         });
     });
 
     $('#runwrap #run').bind('starting', function() {
+        $(this).unbind('click');
         $(this).attr('disabled','disabled');
         $(this).text('Starting...');
     });
@@ -64,7 +70,6 @@ $(document).ready(function() {
         $('#input-buffer').focus();
         self.removeAttr('disabled');
         self.text('Kill');
-        self.unbind('click');
         self.one('click', function() {
             self.trigger('killing');
             $.post('/kill/'+UUID,{signal: 9}, function(data) {
@@ -74,6 +79,7 @@ $(document).ready(function() {
     });
 
     $('#runwrap #run').bind('killing', function() {
+        $(this).unbind('click');
         $(this).attr('disabled','disabled');
         $(this).text('Killing...');
     });
@@ -89,10 +95,6 @@ $(document).ready(function() {
     });
     $('#runwrap #run').trigger('stopped');      // Initial state is stopped.
 
-    $('#editor').focusout(function(ev) {
-        localStorage.editor_text = getContents();
-    });
-
     $('#console').click(function(ev) {
         $('#input-buffer').focus();
     });
@@ -102,7 +104,7 @@ $(document).ready(function() {
         $('#console')[0].scrollTop = $('#console')[0].scrollHeight;
     });
 
-    $('#input-buffer').keydown(function(ev) {
+    $('#input-buffer').bind('focus keydown mousedown',function(ev) {
         $(this).trigger('resize');
     });
 
@@ -119,12 +121,20 @@ $(document).ready(function() {
         $(this).trigger('set','');
     });
 
+    $('#input-buffer').bind('send', function(ev,value) {
+        $('#response').trigger('output',"<span class='input'>" + value + "</span>\n");
+        $.post("/send/"+UUID,{input: value}, function(data){});
+        $(this).trigger('clear');
+    });
+
     $('#input-buffer').keyup(function(ev) {
         var self = $(this);
         if(ev.which == 13) {    // Enter
-            $('#response').trigger('output',"<span class='input'>" + self.val() + "</span><br />");
-            $.post("/send/"+UUID,{input:self.val()}, function(data){});
-            $('#input-buffer').trigger('clear');
+            self.trigger('send',self.val());
+        }
+        if(ev.which == 67 && ev.ctrlKey) {  // C-c
+            $('#response').trigger('output','^C');
+            $.post('/kill/'+UUID,{signal: 2}, function(data) {});
         }
     });
 });
