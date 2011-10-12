@@ -2,7 +2,7 @@ var editor, UUID;
 
 window.onload = function () {
     editor = ace.edit("editor");
-    editor.setTheme('ace/theme/crimson_editor');
+    editor.setTheme('ace/theme/monokai');
     editor.getSession().setMode(new (require('ace/mode/perl').Mode));
     if(localStorage.editor_text)
         editor.getSession().setValue(localStorage.editor_text);
@@ -120,8 +120,7 @@ $(document).ready(function() {
     $('#input-buffer').bind('clear', function(ev) {
         $(this).trigger('set','');
     });
-
-    $('#input-buffer').bind('send', function(ev,value) {
+$('#input-buffer').bind('send', function(ev,value) {
         $('#response').trigger('output',"<span class='input'>" + value + "</span>\n");
         $.post("/send/"+UUID,{input: value}, function(data){});
         $(this).trigger('clear');
