@@ -54,8 +54,6 @@ my %dispatch = (
             my $id = <STDIN>;
             chomp $id;
             my $code = do {local $/; <STDIN>};
-            use Privileges::Drop;
-            drop_privileges('nobody');
 
             {
                 tie local *STDIN, 'Redis::Handle', "$id:in" or
