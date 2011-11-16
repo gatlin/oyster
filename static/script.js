@@ -48,6 +48,7 @@ var postHandler = function(data) {
 };
 
 $(document).ready(function() {
+    var socket = io.connect();
     $('#runwrap #run').bind('stopped', function() {
         var self = $(this);
         self.removeAttr('disabled');

@@ -1,122 +1,148 @@
 #!/usr/bin/env perl
 
+use v5.014;
 use strict;
 use warnings;
-use FindBin qw($Bin);
-use lib "$Bin/lib";
-use Tatsumaki;
-use Tatsumaki::Application;
-use Time::HiRes;
-use Data::UUID;
 
-package StartHandler;
-use base qw(Tatsumaki::Handler);
-use Redis::Handle;
-use YAML qw(Dump);
+my $root;
 
-sub post {
-    my $self = shift;
-    my $code = $self->request->parameters->{code};
-    my $uuid = Data::UUID->new->create_str();
+# cargo-culted from the pocketio source
+BEGIN {
+    use File::Basename ();
+    use File::Spec ();
 
-    tie local *RUNNER, 'Redis::Handle', 'bluequeue';
-    print RUNNER Dump({
-        type => 'run',
-        uuid => $uuid,
-        code => $code,
-    });
-    close RUNNER;
-
-    $self->write([{
-            type => "started",
-            success => 1,
-            uuid => $uuid,
-    }]);
+    $root = File::Basename::dirname(__FILE__);
+    $root = File::Spec->rel2abs($root);
 }
 
-package KillHandler;
-use base qw(Tatsumaki::Handler);
-use Redis::Handle;
-use YAML qw(Dump);
+use PocketIO;
+use PocketIO::Pool::Redis;
 
-sub post {
-    my ($self,$uuid) = @_;
-    my $signal = $self->request->parameters->{signal};
+use JSON;
+use Plack::App::File;
+use Plack::Builder;
+use Plack::Middleware::Static;
 
-    tie local *RUNNER, 'Redis::Handle', 'bluequeue';
-    print RUNNER Dump({
-        type => 'signal',
-        uuid => $uuid,
-        signal => $signal,
-    });
-    close RUNNER;
+builder {
+    # file includes
+    mount '/' =>
+        Plack::App::File->new(file => "$root/templates/index.html");
 
-    $self->write([{
-        type => 'signalled',
-        success => 1,
-        uuid => $uuid,
-    }]);
+    mount '/static/style.css' =>
+        Plack::App::File->new(file => "$root/static/style.css");
+
+    mount '/static/ace/ace.js' =>
+        Plack::App::File->new(file => "$root/static/ace/ace.js");
+
+    mount '/static/ace/theme-monokai.js' =>
+        Plack::App::File->new(file => "$root/static/ace/theme-monokai.js");
+
+    mount '/static/ace/mode-perl.js' =>
+        Plack::App::File->new(file => "$root/static/ace/mode-perl.js");
+
+    mount '/static/script.js' =>
+        Plack::App::File->new(file => "$root/static/script.js");
+
+    mount '/socket.io/socket.io.js' =>
+        Plack::App::File->new(file => "$root/static/socket.io.js");
+
+    mount '/socket.io/static/flashsocket/WebSocketMain.swf' =>
+        Plack::App::File->new(file => "$root/static/WebSocketMain.swf");
+
+    mount '/socket.io/static/flashsocket/WebSocketMainInsecure.swf' =>
+        Plack::App::File->new(file =>
+            "$root/static/WebSocketMainInsecure.swf");
+
+    # actual event handling
+
+    mount '/socket.io' => PocketIO->new(
+        pool => PocketIO::Pool::Redis->new,
+        handler => sub {
+            my $self = shift;
+
+            $self->on(
+                'start' => sub {
+                    use Data::UUID;
+                    use Redis::Handle;
+                    use YAML qw(Dump);
+
+                    my ($self,$code) = @_;
+                    my $uuid = Data::UUID->new->create_str();
+                    tie local *RUNNER, 'Redis::Handle', 'bluequeue';
+                    print RUNNER Dump({
+                        type => 'run',
+                        uuid => $uuid,
+                        code => $code,
+                    });
+                    close RUNNER;
+                    $self->send(PocketIO::Message->new(
+                            type => 'event',
+                            data => {
+                                name => 'started',
+                                args => {
+                                    uuid => $uuid,
+                                    success => 1,
+                                },
+                            },
+                        )
+                    );
+                }
+            );
+
+            $self->on(
+                'recv' => sub {
+                    use Redis::Handle;
+                    my ($self,$uuid) = @_;
+
+                    my $in = tie local *APPIN, 'Redis::Handle', "$uuid:out";
+                    $in->poll_once(sub {
+                        my @messages = @_;
+                        map {
+                            $self->send(PocketIO::Message->new(
+                                    type => 'event',
+                                    data => {
+                                        name => 'recvd',
+                                        args => {
+                                            response => $_,
+                                            success => 1,
+                                        },
+                                    },
+                                )
+                            );
+                        } @messages;
+                        close APPIN;
+                    });
+                }
+            );
+
+            $self->on(
+                'kill' => sub {
+                    use Redis::Handle;
+                    use YAML qw/Dump/;
+
+                    my ($self,$uuid,$signal) = @_;
+
+                    tie local *RUNNER, 'Redis::Handle', 'bluequeue';
+                    print RUNNER Dump({
+                        type => 'signal',
+                        uuid => $uuid,
+                        signal => $signal,
+                    });
+                    close RUNNER;
+
+                    $self->send(PocketIO::Message->new(
+                            type => 'event',
+                            data => {
+                                name => 'signalled',
+                                args => {
+                                    success => 1,
+                                    uuid => $uuid,
+                                },
+                            },
+                        )
+                    );
+                }
+            );
+        }
+    );
 }
-
-package RecvHandler;
-use base qw(Tatsumaki::Handler);
-__PACKAGE__->asynchronous(1);
-use Redis::Handle;
-
-sub get {
-    my ($self,$uuid) = @_;
-    my $in = tie local *APPIN, 'Redis::Handle', "$uuid:out";
-    $in->poll_once(sub {
-        my @messages = @_;
-        $self->write([map {{
-            type => "response",
-            success => 1,
-            response => $_,
-        }} @messages]);
-        close APPIN;
-        $self->finish;
-    });
-}
-
-package SendHandler;
-use base qw(Tatsumaki::Handler);
-use Redis::Handle;
-
-sub post {
-    my ($self,$uuid) = @_;
-    my $input = $self->request->parameters->{input};
-
-    tie local *APPOUT, 'Redis::Handle', "$uuid:in";
-    print APPOUT "$input";
-    close APPOUT;
-
-    $self->write([{
-        type => "sent",
-        success => 1,
-    }]);
-}
-
-package InitHandler;
-use base qw(Tatsumaki::Handler);
-
-sub get {
-    my $self = shift;
-    $self->render('index.html');
-}
-
-package main;
-use File::Basename;
-
-my $uuid_re = '[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12}';
-my $app = Tatsumaki::Application->new([
-    "/start\$" => 'StartHandler',
-    "/kill/($uuid_re)" => 'KillHandler',
-    "/send/($uuid_re)\$" => 'SendHandler',
-    "/recv/($uuid_re)\$" => 'RecvHandler',
-    "/\$" => 'InitHandler',
-]);
-
-$app->template_path(dirname(__FILE__) . "/templates");
-$app->static_path(dirname(__FILE__) . "/static");
-
-return $app->psgi_app;
