@@ -95,6 +95,7 @@ builder {
                     my ($self,$uuid) = @_;
 
                     my $in = tie local *APPIN, 'Redis::Handle', "$uuid:out";
+
                     $in->poll_once(sub {
                         my @messages = @_;
                         map {
@@ -139,6 +140,28 @@ builder {
                                     uuid => $uuid,
                                 },
                             },
+                        )
+                    );
+                }
+            );
+
+            $self->on(
+                'send' => sub {
+                    use Redis::Handle;
+                    my ($self,$uuid,$input);
+
+                    tie local *APPOUT, 'Redis::Handle', "$uuid:in";
+                    print APPOUT "$input";
+                    close APPOUT;
+
+                    $self->send(PocketIO::Message->new(
+                            type => 'event',
+                            data => {
+                                name => 'sent',
+                                args => {
+                                    success => 1,
+                                },
+                            }
                         )
                     );
                 }
