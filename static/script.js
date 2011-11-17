@@ -32,9 +32,9 @@ socket.on('started',function(obj) {
 
 socket.on('recvd',function(obj) {
     var r = obj.response || '';
+    console.log("Message was: " + r);
     if (r.indexOf(UUID) == 0) {
         var message = r.substr(UUID.length);
-        console.log("Message was: " + message);
         if(message.indexOf("KILL") == 0) {
             $('#runwrap #run').trigger('killed');
         }
@@ -47,6 +47,7 @@ socket.on('recvd',function(obj) {
     }
     else {
         $("#response").trigger('output',r);
+        socket.emit('recv',UUID);
     }
 });
 

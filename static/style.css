@@ -53,7 +53,8 @@ html, body {
     vertical-align: text-top;
     font: 14px monospace;
     color: #009900;
-    padding-left: 10px;
+    padding-left: 2px;
+    outline: none;
 }
 
 span#response {
