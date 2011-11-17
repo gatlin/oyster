@@ -57,4 +57,4 @@ Useful modules to have installed:
 
 See the "Issues" page on GitHub.
 
-[1]: "http://github.com/vti/pocketio"
+[1]: http://github.com/vti/pocketio
