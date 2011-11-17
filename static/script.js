@@ -1,4 +1,5 @@
 var editor, UUID;
+var socket = io.connect();
 
 window.onload = function () {
     editor = ace.edit("editor");
@@ -22,30 +23,37 @@ window.onload = function () {
     });
 }
 
-var postHandler = function(data) {
-    // begin the loop
-    UUID = data[0].uuid;
-
-    $.ev.loop('/recv/'+UUID, {
-        response: function(ev) {
-            var r = ev.response || '';
-            if (r.indexOf(UUID) == 0) {
-                var message = r.substr(UUID.length);
-                if (message.indexOf("KILL") == 0) {
-                    $('#runwrap #run').trigger('killed');
-                    $.ev.stop();
-                }
-                $('#response').trigger('output',
-                    "\n<span class='meta'>" + message + "</span>\n"
-                );
-            } else {
-                $("#response").trigger('output',r);
-            }
-        },
-    });
-
+socket.on('started',function(obj) {
+    UUID = obj.uuid;
+    console.log("UUID is " + UUID);
     $('#runwrap #run').trigger('running');
-};
+    socket.emit('recv',UUID);
+});
+
+socket.on('recvd',function(obj) {
+    var r = obj.response || '';
+    console.log("Message was: " + r);
+    if (r.indexOf(UUID) == 0) {
+        var message = r.substr(UUID.length);
+        if(message.indexOf("KILL") == 0) {
+            $('#runwrap #run').trigger('killed');
+        }
+        else {
+            socket.emit('recv',UUID);
+        }
+        $('#response').trigger('output',
+            "\n<span class='meta'>" + message + "</span>\n"
+        );
+    }
+    else {
+        $("#response").trigger('output',r);
+        socket.emit('recv',UUID);
+    }
+});
+
+socket.on('signalled',function() {
+    $('#runwrap #run').trigger('killed');
+});
 
 $(document).ready(function() {
     $('#runwrap #run').bind('stopped', function() {
@@ -55,7 +63,7 @@ $(document).ready(function() {
         self.one('click', function() {
             $('#response').text('');
             self.trigger('starting');
-            $.post('/start',{code: editor.getSession().getValue()},postHandler);
+            socket.emit('start',editor.getSession().getValue());
         });
     });
 
@@ -72,7 +80,7 @@ $(document).ready(function() {
         self.text('Kill');
         self.one('click', function() {
             self.trigger('killing');
-            $.post('/kill/'+UUID,{signal: 9}, function(data) {
+            socket.emit('kill',UUID,9,function() {
                 self.trigger('killed');
             });
         });
@@ -120,9 +128,10 @@ $(document).ready(function() {
     $('#input-buffer').bind('clear', function(ev) {
         $(this).trigger('set','');
     });
-$('#input-buffer').bind('send', function(ev,value) {
+
+    $('#input-buffer').bind('send', function(ev,value) {
         $('#response').trigger('output',"<span class='input'>" + value + "</span>\n");
-        $.post("/send/"+UUID,{input: value}, function(data){});
+        socket.emit('send',[UUID,value]);
         $(this).trigger('clear');
     });
 
@@ -133,7 +142,7 @@ $('#input-buffer').bind('send', function(ev,value) {
         }
         if(ev.which == 67 && ev.ctrlKey) {  // C-c
             $('#response').trigger('output','^C');
-            $.post('/kill/'+UUID,{signal: 2}, function(data) {});
+            socket.emit('kill',UUID,2,function() {});
         }
     });
 });

@@ -11,9 +11,6 @@ To view the license, please visit [its web page](http://www.gnu.org/copyleft/gpl
 
 ## Introduction
 
-We had this cool idea and wanted to get it out the door ASAP. So, without too much egregious apology, we'd like to 
-come clean that this is not a finished product - but it's functional!
-
 Oyster is a forking server which remotely runs Perl code. It makes the program's STDIN and STDOUT available
 as Redis lists, and communicates with its frontend via Redis as well.
 
@@ -49,8 +46,7 @@ Useful modules to have installed:
 * Redis
 * AnyEvent::Redis
 * Redis::Handle (Tron created this!)
-
-We include the Tatsumaki framework in `lib/`. 
+* PocketIO
 
 ## Limitations
 
