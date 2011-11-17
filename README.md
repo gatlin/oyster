@@ -17,7 +17,7 @@ as Redis lists, and communicates with its frontend via Redis as well.
 The upshot is that you can write naive Perl code and run it *interactively* in the browser. This doesn't simply eval
 code and print the output: you can accept textual input in real time. We think this is neat.
 
-We have written an example web application using Tatsumaki; the relevant code is in app.psgi (and usage is below). It
+We have written an example web application using [PocketIO][1]; the relevant code is in app.psgi (and usage is below). It
 exists to showcase the current features of oyster. We encourage people to come up with their own frontends to oyster
 for any purpose they see fit.
 
@@ -56,3 +56,5 @@ Useful modules to have installed:
 ## Roadmap
 
 See the "Issues" page on GitHub.
+
+[1]: http://github.com/vti/pocketio
