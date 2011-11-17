@@ -66,14 +66,6 @@ my %dispatch = (
                 eval $code;
             }
 
-            tie local *STDIN, 'Redis::Handle', "$id:in" or
-                croak "Couldn't tie STDIN to [$id]: $!";
-            tie local *STDOUT, 'Redis::Handle', "$id:out" or
-                croak "Couldn't tie STDOUT to [$id]: $!";
-            local *STDERR = *STDOUT;
-            local *ARGV = *STDIN;
-            eval $code; warn $@ if $@;
-
             exit(0);
         }
     },

@@ -49,6 +49,10 @@ socket.on('recvd',function(obj) {
     }
 });
 
+socket.on('signalled',function() {
+    $('#runwrap #run').trigger('killed');
+});
+
 $(document).ready(function() {
     $('#runwrap #run').bind('stopped', function() {
         var self = $(this);
@@ -125,7 +129,7 @@ $(document).ready(function() {
 
     $('#input-buffer').bind('send', function(ev,value) {
         $('#response').trigger('output',"<span class='input'>" + value + "</span>\n");
-        socket.emit('send',UUID,value);
+        socket.emit('send',[UUID,value]);
         $(this).trigger('clear');
     });
 

@@ -148,7 +148,8 @@ builder {
             $self->on(
                 'send' => sub {
                     use Redis::Handle;
-                    my ($self,$uuid,$input);
+                    my ($self,$arr) = @_;
+                    my ($uuid,$input) = @$arr;
 
                     tie local *APPOUT, 'Redis::Handle', "$uuid:in";
                     print APPOUT "$input";
