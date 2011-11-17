@@ -54,6 +54,7 @@ html, body {
     font: 14px monospace;
     color: #009900;
     padding-left: 10px;
+    outline: none;
 }
 
 span#response {
