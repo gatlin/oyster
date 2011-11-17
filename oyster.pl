@@ -63,7 +63,9 @@ my %dispatch = (
                 tie local *STDERR, 'Redis::Handle', "$id:out" or
                     croak "Couldn't tie STDERR to [$id]: $!";
                 local *ARGV = *STDIN;
-                eval $code;
+                no strict;
+                eval $code or croak $@;
+                use strict;
             }
 
             exit(0);
