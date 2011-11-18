@@ -64,7 +64,7 @@ my %dispatch = (
                     croak "Couldn't tie STDERR to [$id]: $!";
                 local *ARGV = *STDIN;
                 no strict;
-                eval $code or croak $@;
+                eval $code;
                 use strict;
             }
 
